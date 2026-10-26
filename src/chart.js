@@ -21,9 +21,17 @@ export function drawChart(canvas, { series, startYear, horizon = 25, log = true,
   for (const t of ticks) { ctx.beginPath(); ctx.moveTo(padL, y(t)); ctx.lineTo(padL + W, y(t)); ctx.stroke(); ctx.textAlign = 'right'; ctx.fillText(String(t), padL - 5, y(t) + 4); }
   ctx.textAlign = 'center';
   for (const yr of [0, 5, 10, 15, 20, 25]) if (yr <= horizon) ctx.fillText(String(startYear + yr), x(yr), cssH - 6);
-  // lines
+  // lines (the bold series gets a soft area fill)
   for (const s of series) {
-    ctx.beginPath(); ctx.strokeStyle = s.color; ctx.lineWidth = s.width || 1.5; ctx.setLineDash(s.dash || []);
+    if (s.bold) {
+      const pts = s.values.map((v, i) => v == null ? null : [x(i), y(v)]).filter(Boolean);
+      if (pts.length > 1) {
+        const grad = ctx.createLinearGradient(0, padT, 0, padT + H);
+        grad.addColorStop(0, s.color + '33'); grad.addColorStop(1, s.color + '00');
+        ctx.beginPath(); ctx.moveTo(pts[0][0], padT + H); for (const p of pts) ctx.lineTo(p[0], p[1]); ctx.lineTo(pts[pts.length - 1][0], padT + H); ctx.closePath(); ctx.fillStyle = grad; ctx.fill();
+      }
+    }
+    ctx.beginPath(); ctx.strokeStyle = s.color; ctx.lineWidth = s.width || 1.5; ctx.setLineDash(s.dash || []); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
     let started = false;
     s.values.forEach((v, i) => { if (v == null) return; if (!started) { ctx.moveTo(x(i), y(v)); started = true; } else ctx.lineTo(x(i), y(v)); });
     ctx.stroke(); ctx.setLineDash([]);

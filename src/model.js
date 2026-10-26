@@ -504,7 +504,8 @@ function summarize(state, e) {
   if (e.shocks.find(s => s.id === 'recession')) bits.push('a global downturn');
   const tone = g > 4 ? 'A very good year' : g > 2 ? 'A good year' : g > 0 ? 'A so-so year' : g > -2 ? 'A poor year' : 'A bad year';
   const gs = `${g >= 0 ? '+' : ''}${g.toFixed(1)}%`;
-  return bits.length ? `${tone} (${gs}), with ${bits.join(', ')}.` : `${tone} (${gs}). Nothing much happened, which is most years.`;
+  if (bits.length) return `${tone} (${gs}), with ${bits.join(', ')}.`;
+  return g > 2 ? `${tone} (${gs}), and nothing dramatic behind it.` : g > 0 ? `${tone} (${gs}). Quiet. Most years are.` : `${tone} (${gs}), with no single thing to blame.`;
 }
 
 // ---------- Autopilot ----------

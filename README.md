@@ -1,6 +1,8 @@
 # Take-Off
 
-A free browser game: live one economic reformer's 25-year career in a real low- or middle-income country, with real data. Modelled on [1 in 8 Billion](https://1in8b.life/en/). Your choices matter, but less than you think.
+A free browser game: take the seat and spend 25 years trying to change a real low- or middle-income country's path, with real data. Modelled on [1 in 8 Billion](https://1in8b.life/en/). Built to give policymakers, funders and practitioners a feel for the stakes, the short tenures, the shocks, and the real possibility of a take-off.
+
+Made by Jonathan Mazumdar.
 
 ## Run it
 

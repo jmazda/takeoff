@@ -9,6 +9,22 @@ import { renderShareImage, shareOrDownload } from './share.js';
 import { A } from './assumptions.js';
 
 const $ = (s, el = document) => el.querySelector(s);
+const ICON = {
+  power: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>',
+  customs: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17h18l-2 4H5z"/><path d="M5 17V9h14v8"/><path d="M9 9V5h6v4"/></svg>',
+  sez: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>',
+  anchor: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="3"/><path d="M12 8v13"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/></svg>',
+  sme: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1-5h16l1 5"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/><path d="M5 12v9h14v-9"/><path d="M10 21v-6h4v6"/></svg>',
+  skills: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>',
+  macro: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M17 7H9.5a3 3 0 0 0 0 6h5a3 3 0 0 1 0 6H6"/></svg>',
+  ipa: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>',
+  hold: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+  watch: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+  voice: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a9 9 0 0 1 0 14"/></svg>',
+  convene: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M2 21v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2"/><path d="M17 14a4 4 0 0 1 4 4v3"/></svg>',
+  leave: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>',
+};
+const iconFor = o => ICON[o.lever] || ({ m_hold: 'hold', a_protect: 'hold', f_convene: 'convene', f_leave: 'leave', o_wait: 'watch', o_voice: 'voice', o_funder: 'convene' }[o.id] ? ICON[{ m_hold: 'hold', a_protect: 'hold', f_convene: 'convene', f_leave: 'leave', o_wait: 'watch', o_voice: 'voice', o_funder: 'convene' }[o.id]] : ICON.watch);
 const SAVE_KEY = 'takeoff.v1';
 const SPEEDS = { 1: 4000, 2: 2000, 4: 1000, 8: 500, 16: 250 };
 
@@ -103,7 +119,7 @@ function renderDraw() {
   const prior = `${(st.prior * 100).toFixed(1)}%`;
   $('#draw').innerHTML = `
     <div class="countrycard">
-      <div class="sub">${esc(c.regionName.trim())} · ${c.income === 'LIC' ? 'Low income' : c.income === 'LMC' ? 'Lower-middle income' : 'Upper-middle income'}</div>
+      <p class="eyebrow">${esc(c.regionName.trim())} · ${c.income === 'LIC' ? 'Low income' : c.income === 'LMC' ? 'Lower-middle income' : 'Upper-middle income'}</p>
       <h1>${esc(c.name)}</h1>
       <div class="sub">It is ${st.startYear}. You have just been appointed ${esc(seatName.replace(/^Head of the /, 'head of the ').replace(/^Director-General/, 'director-general').replace(/^Minister/, 'minister'))}.</div>
     </div>
@@ -154,7 +170,7 @@ function renderDraw() {
       <ul class="small" style="margin:0; padding-left:18px">${sibs}</ul>
     </div>
     <button class="btn primary block" id="btn-begin">Begin your career</button>
-    <p class="tiny muted" style="margin-top:10px">You will be reshuffled when the tenure data says so, not when you choose.</p>`;
+    <p class="tiny muted" style="margin-top:10px">You will be reshuffled when the tenure data says so, not when you choose. Use the time.</p>`;
   $('#btn-begin').onclick = () => { renderPlay(); show('play'); checkPauses(); };
 }
 
@@ -164,12 +180,13 @@ function renderPlay() {
   const seat = M.SEATS[st.career.seat];
   const html = `
     <div class="topbar">
-      <div class="row spread">
-        <div><div class="yr">${st.year} <span class="muted small">· year ${st.t + 1} of ${M.HORIZON}</span></div><div class="seat">${esc(seat.long)}${st.career.seat !== 'out' ? ` · year ${st.career.seatYears + 1} in seat` : ` · ${st.career.outYears} ${st.career.outYears === 1 ? 'year' : 'years'} out`}</div></div>
-        <div class="res"><span>${T('political capital', 'Capital')} ${pips(st.career.pc, 10, '')}</span><span>${T('budget', 'Budget')} ${pips(st.career.budget, 8, 'budget')}</span></div>
+      <div class="row spread" style="align-items:flex-start">
+        <div><div class="yr">${st.year} <span class="muted">year ${st.t + 1} of ${M.HORIZON}</span></div><div class="seat">${esc(seat.long)}${st.career.seat !== 'out' ? ` · year ${st.career.seatYears + 1} in seat` : ` · ${st.career.outYears} ${st.career.outYears === 1 ? 'year' : 'years'} out`}</div></div>
+        <div class="meters"><span class="meter">${T('political capital', 'Capital')} ${pips(st.career.pc, 10, '')}</span><span class="meter">${T('budget', 'Budget')} ${pips(st.career.budget, 8, 'budget')}</span></div>
       </div>
+      <div class="track">${Array.from({ length: M.HORIZON }, (_, i) => `<i class="${i < st.t ? 'on' : i === st.t ? 'now' : ''}"></i>`).join('')}</div>
     </div>
-    <div class="card" style="padding:12px"><canvas class="chart" id="chart"></canvas><div class="legend"><span><i style="background:var(--you)"></i>${esc(g.country.name)}</span><span><i style="background:var(--sib)"></i>siblings</span>${regimeBadges(st)}</div></div>
+    <div class="card chartcard"><canvas class="chart" id="chart"></canvas><div class="legend"><span><i style="background:var(--you)"></i>${esc(g.country.name)}</span><span><i style="background:var(--sib)"></i>siblings</span>${regimeBadges(st)}</div></div>
     <div class="stats">
       <div class="stat"><div class="v">${fmtMoney(st.income)}</div><div class="k">income per person</div></div>
       <div class="stat"><div class="v">${fmtBig(st.exports)}</div><div class="k">exports <span class="${st.exports >= st.exports0 ? 'pos' : 'neg'}">${pct(100 * (st.exports / st.exports0 - 1))}</span></div></div>
@@ -206,14 +223,14 @@ function renderChart(canvas, big = false) {
 function renderThisYear() {
   const g = app.game, st = g.state;
   const menu = M.menuFor(st);
-  const seatHint = { minister: 'Big levers, little time.', adviser: 'Smaller levers, more continuity.', ipa: 'Close to firms, weak on policy.', funder: 'No direct policy, long view.', out: 'You can only watch. The country keeps going.' }[st.career.seat];
+  const seatHint = { minister: 'Big levers, little time.', adviser: 'Smaller levers, more continuity.', ipa: 'Close to firms, weak on policy.', funder: 'No direct policy, long view.', out: 'The country keeps going. So do you.' }[st.career.seat];
   const opts = menu.map(o => `<button class="opt ${g.selected === o.id ? 'on' : ''}" data-id="${o.id}" ${o.affordable ? '' : 'disabled'}>
-      <span class="t">${esc(o.label)}</span><span class="cost">${o.pc ? o.pc + ' capital' : ''}${o.pc && o.budget ? ' · ' : ''}${o.budget ? o.budget + ' budget' : ''}${!o.pc && !o.budget ? 'free' : ''}</span>
+      <span class="ico">${iconFor(o)}</span><span class="t">${esc(o.label)}</span><span class="cost">${o.pc ? o.pc + ' capital' : ''}${o.pc && o.budget ? ' · ' : ''}${o.budget ? o.budget + ' budget' : ''}${!o.pc && !o.budget ? 'free' : ''}</span>
       <span class="b">${esc(o.blurb)}</span>${o.why ? `<span class="why">${esc(o.why)}</span>` : ''}</button>`).join('');
   const sel = menu.find(o => o.id === g.selected);
   const sectorRow = sel && sel.sector ? `<div style="margin-top:10px"><div class="small muted" style="margin-bottom:6px">Which sector?</div><div class="chips">${Object.entries(st.prox).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([k, p]) => `<button class="chip ${g.sector === k ? 'on' : ''}" data-sector="${k}">${SECTORS[k].name} <span class="${g.sector === k ? '' : 'muted'}">${Math.round(p * 100)}%</span></button>`).join('')}</div><div class="tiny muted" style="margin-top:4px">Percentages are proximity to your current exports: the odds an anchor firm lands scale with it.</div></div>` : '';
   $('#thisyear').innerHTML = `
-    <h3>This year, ${st.year} → ${st.year + 1} <small>${esc(seatHint)}</small></h3>
+    <p class="eyebrow">This year · ${st.year} → ${st.year + 1}</p><p class="small muted" style="margin-top:-4px">${esc(seatHint)}</p>
     <div class="menu">${opts}</div>
     ${sectorRow}
     <div class="row spread" style="margin-top:12px">
@@ -232,13 +249,14 @@ function renderLastYear() {
   const g = app.game, e = g.lastEntry;
   const el = $('#lastyear'); if (!el) return;
   if (!e) { el.innerHTML = ''; return; }
-  const shocks = e.shocks.map(s => `<div class="shock"><span>${esc(s.text)}</span><span class="ppt ${s.ppt > 0 ? 'pos' : s.ppt < 0 ? 'neg' : ''}">${s.ppt ? sign(s.ppt) + ' pt' : ''}</span></div>`).join('');
-  const events = e.events.map(v => `<div class="shock"><span><b>${esc(v.title)}.</b> You chose “${esc(v.choice)}”. ${esc(v.result)}</span><span class="ppt">${v.ppt ? sign(v.ppt) + ' pt' : ''}</span></div>`).join('');
+  const ppt = v => v ? `<span class="ppt ${v > 0 ? 'pos' : 'neg'}">${sign(v)} pt</span>` : '';
+  const shocks = e.shocks.map(s => `<div class="shock"><span>${esc(s.text)}</span>${ppt(s.ppt)}</div>`).join('');
+  const events = e.events.map(v => `<div class="shock"><span><b>${esc(v.title)}.</b> You chose “${esc(v.choice)}”. ${esc(v.result)}</span>${ppt(v.ppt)}</div>`).join('');
   const career = e.career.map(n => `<div class="shock"><span>${esc(n.text)}</span></div>`).join('');
   const succ = g.state.flags.lastSuccessor && e.career.some(n => n.id === 'left') ? `<div class="small" style="margin-top:6px">Your successor ${g.state.flags.lastSuccessor.length ? g.state.flags.lastSuccessor.map(o => `<span class="pill ${o.kept ? '' : 'bad'}">${o.kept ? 'kept' : 'reversed'} ${M.LEVER_INFO[o.lever].name.toLowerCase()}</span>`).join(' ') : 'found nothing worth reversing.'}</div>` : '';
-  el.innerHTML = `<div class="card">
-    <h3>${e.year - 1} → ${e.year} <small>${e.choice ? 'focus: ' + esc(e.choice.label) : ''}</small></h3>
-    <p style="margin:0 0 6px"><b>${esc(e.summary)}</b></p>
+  el.innerHTML = `<div class="card yearcard">
+    <p class="eyebrow" style="display:flex;justify-content:space-between"><span>${e.year - 1} → ${e.year}</span><span class="muted" style="text-transform:none;letter-spacing:0;font-weight:500">${e.choice ? 'focus: ' + esc(e.choice.label) : ''}</span></p>
+    <p class="sum">${esc(e.summary)}</p>
     ${shocks}${events}${career}${succ}
     <details class="why" style="margin-top:8px"><summary>Why did this happen?</summary>${whyPanel(e)}</details>
   </div>`;
@@ -344,11 +362,11 @@ function renderEnd() {
   const tookOff = myG > 3.5;
   const kept = M.LEVERS.filter(l => st.reforms[l].yours > 0.3 && st.reforms[l].stock > 0.3).map(l => M.LEVER_INFO[l].name);
   const lost = M.LEVERS.filter(l => st.reforms[l].yours > 0.3 && st.reforms[l].reversed > 0 && st.reforms[l].stock <= 0.3).map(l => M.LEVER_INFO[l].name);
-  const verdict = tookOff ? `${c.name} took off: ${myG.toFixed(1)}% a year for 25 years. That happens in fewer than one career in five.` : myG > 2 ? `${c.name} grew ${myG.toFixed(1)}% a year. Solid, unspectacular, and better than most. No take-off.` : myG > 0.5 ? `${c.name} grew ${myG.toFixed(1)}% a year. The usual story: some good years, some shocks, no take-off.` : `${c.name} barely grew: ${myG.toFixed(1)}% a year. A rough 25 years, and not mostly your fault.`;
+  const verdict = tookOff ? `${c.name} took off: ${myG.toFixed(1)}% a year for 25 years. One career in five gets here. Yours did.` : myG > 2 ? `${c.name} grew ${myG.toFixed(1)}% a year: real, steady gains for millions of people, without a take-off. Most good careers look like this.` : myG > 0.5 ? `${c.name} grew ${myG.toFixed(1)}% a year. Some good years, some hard shocks, no take-off yet. What survived you is where the next attempt starts.` : `${c.name} barely grew: ${myG.toFixed(1)}% a year. A rough 25 years, with shocks nobody in the room controlled. The seat was still worth taking.`;
   const careerLine = `${st.career.history.filter(h => !['out', 'funder'].includes(h.seat)).length} government seats, ${st.career.reshuffles} reshuffles, ${st.career.outYears} years out of office, ${st.elections} elections, ${st.log.filter(e => e.shocks.some(s => s.id === 'coup')).length} coup attempts, ${st.booms.filter(b => b.byYou).length} pioneer firms landed on your watch.`;
   $('#end').innerHTML = `
-    <div class="countrycard"><div class="sub">${st.startYear}–${endYear}</div><h1>${esc(c.name)}</h1><div class="sub">${esc(verdict)}</div></div>
-    <div class="card" style="padding:12px"><canvas class="chart big" id="endchart"></canvas><div class="legend"><span><i style="background:var(--you)"></i>${esc(c.name)}</span><span><i style="background:var(--sib)"></i>siblings${sibs.some(s => s.simulated) ? ' (simulated)' : ' (real history)'}</span><span id="ref-legend"></span></div></div>
+    <div class="countrycard"><p class="eyebrow">${st.startYear}–${endYear} · your career</p><h1>${esc(c.name)}</h1><div class="sub">${esc(verdict)}</div></div>
+    <div class="card chartcard"><canvas class="chart big" id="endchart"></canvas><div class="legend"><span><i style="background:var(--you)"></i>${esc(c.name)}</span><span><i style="background:var(--sib)"></i>siblings${sibs.some(s => s.simulated) ? ' (simulated)' : ' (real history)'}</span><span id="ref-legend"></span></div></div>
     <div class="stats">
       <div class="stat"><div class="v">${myG.toFixed(1)}%</div><div class="k">growth per person, per year</div></div>
       <div class="stat"><div class="v">${pct(100 * (st.exports / st.exports0 - 1))}</div><div class="k">exports (${fmtBig(st.exports0)} → ${fmtBig(st.exports)})</div></div>
@@ -370,7 +388,7 @@ function renderEnd() {
     <div class="card" id="luck"><h3>You versus luck</h3><p class="small muted">Rerunning your career 80 times…</p></div>
     <div class="card">
       <h3>Your answers</h3>
-      ${st.answers.length ? `<ul class="answers" style="padding-left:18px; margin:0">${st.answers.map(a => `<li><div class="q">${a.year} · ${esc(a.title)}: ${esc(a.q)}</div><div>${a.answer ? esc(a.answer) : '<span class="muted">skipped</span>'}</div></li>`).join('')}</ul>` : '<p class="small muted">You skipped every pause. Fair enough; so does everyone the first time.</p>'}
+      ${st.answers.length ? `<ul class="answers">${st.answers.map(a => `<li><div class="q">${a.year} · ${esc(a.title)}: ${esc(a.q)}</div><div class="a">${a.answer ? esc(a.answer) : '<span class="muted small">skipped</span>'}</div></li>`).join('')}</ul>` : '<p class="small muted">You skipped every pause. Next time, answer one: they are the questions people in these seats actually ask themselves.</p>'}
     </div>
     <div class="card">
       <h3>Where you actually work</h3>
@@ -379,7 +397,7 @@ function renderEnd() {
       <div id="ref-out" class="small" style="margin-top:8px"></div>
     </div>
     <div class="row">
-      <button class="btn primary" id="btn-share">Share the result</button>
+      <button class="btn primary lg" id="btn-share">Share the result <span class="arrow">→</span></button>
       <button class="btn" id="btn-again">Play again</button>
     </div>
     <p class="tiny muted" style="margin-top:12px">Siblings: real countries with a similar income in ${st.startYear}. ${sibs.some(s => s.simulated) ? 'Their paths are simulated with the same model and a default government, because the years have not happened yet.' : 'Their paths are their real income data (WDI).'} Growth per person is annual log growth over 25 years.</p>`;
@@ -446,9 +464,9 @@ async function luckVersusSkill(myG) {
       <div class="stat"><div class="v ${skill >= 0 ? 'pos' : 'neg'}">${sign(skill)} pt</div><div class="k">your choices, same luck</div></div>
       <div class="stat"><div class="v ${luck >= 0 ? 'pos' : 'neg'}">${sign(luck)} pt</div><div class="k">your luck, same choices</div></div>
     </div>
-    <div class="bar" style="margin:10px 0 4px; display:flex"><i style="width:${100 * Math.abs(skill) / tot}%"></i><i style="width:${100 * Math.abs(luck) / tot}%; background: var(--warm)"></i></div>
+    <div class="split"><i style="width:${100 * Math.abs(skill) / tot}%; background: var(--accent)"></i><i style="width:${100 * Math.abs(luck) / tot}%; background: var(--warm)"></i></div>
     <div class="tiny muted">share of the gap: <span class="pos">you</span> ${Math.round(100 * Math.abs(skill) / tot)}% · <span style="color:var(--warm)">luck</span> ${Math.round(100 * Math.abs(luck) / tot)}%</div>
-    <p class="small" style="margin-top:10px">${line} ${line2} The spread from luck alone is ±${spreadLuck.toFixed(1)} points a year, which is why most of what you see in the chart is not you.</p>
+    <p class="small" style="margin-top:10px">${line} ${line2} Luck alone moves the result by ±${spreadLuck.toFixed(1)} points a year. That is the weather every reformer works in, and why the ones who keep going through it deserve more credit than they get.</p>
     <p class="tiny muted">Method: ${N} reruns with your shocks and a default government, and ${N} reruns with your choices and fresh shocks. Where your recorded choice does not fit the seat you held in the rerun, the default government decides.</p>`;
 }
 

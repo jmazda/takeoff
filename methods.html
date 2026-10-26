@@ -3,13 +3,14 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Take-Off · Methods</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <div class="wrap methods">
-  <header class="top"><a class="brand" href="index.html">Take-Off</a><nav><a href="index.html">Play</a></nav></header>
+  <header class="top"><a class="brand" href="index.html"><svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M4 26 L12 18 L18 22 L28 8" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 8 H28 V15" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Take-Off</a><nav><a href="index.html">Play</a></nav></header>
   <h1>Methods</h1>
-  <p class="lede muted">Every number in the game comes from public data or a stated assumption. This page lists both. If you are a growth economist and something here looks naive, that is exactly the feedback we want.</p>
+  <p class="lede muted">Take-Off exists to build empathy for the people in these seats: the size of the stakes, the shortness of the tenures, the weather of shocks they work in, and the real possibility of a take-off. Every number comes from public data or a stated assumption, listed here. If you are a growth economist and something looks naive, that is exactly the feedback we want.</p>
 
   <div class="card">
     <h2>Data</h2>
@@ -54,7 +55,7 @@
       <li>It does not claim precision. Effects are capped so that skill helps a little, not a lot. The calibration target is that a thoughtful player beats the siblings slightly more often than a random one. Run <code>node tools/calibrate.mjs</code> to see the current numbers.</li>
     </ul>
   </div>
-  <footer>Take-Off is a free browser game by Growth Teams. Code and data pipeline are in the repository; the data file is rebuilt from the World Bank API with one command.</footer>
+  <footer>Take-Off is a free browser game by Jonathan Mazumdar. Code and data pipeline are at <a href="https://github.com/jmazda/takeoff">github.com/jmazda/takeoff</a>; the data file is rebuilt from the World Bank API with one command.</footer>
 </div>
 <script type="module">
   import { A } from './src/assumptions.js';

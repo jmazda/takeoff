@@ -4,26 +4,40 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Take-Off</title>
-<meta name="description" content="Live one economic reformer's 25-year career in a real country, with real data. Most careers don't produce a take-off.">
+<meta name="description" content="Take the seat. Spend 25 years trying to change a real country's path, with real data. Take-offs are rare. Someone starts every one of them.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><path d='M4 26 L14 16 L20 20 L28 6' stroke='%230f766e' stroke-width='4' fill='none' stroke-linecap='round'/></svg>">
 </head>
 <body>
 <div class="wrap">
   <header class="top">
-    <a class="brand" href="#" id="brand">Take-Off</a>
+    <a class="brand" href="#" id="brand"><svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M4 26 L12 18 L18 22 L28 8" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 8 H28 V15" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Take-Off</a>
     <nav><a href="methods.html">Methods</a><button id="nav-restart" hidden>Restart</button></nav>
   </header>
 
   <section id="home" class="screen active">
     <div class="hero">
+      <svg class="hero-art" viewBox="0 0 600 220" preserveAspectRatio="none" aria-hidden="true">
+        <path class="sib" d="M0 170 C100 165 180 150 260 155 S420 140 600 130"/>
+        <path class="sib" d="M0 175 C120 180 200 170 300 175 S460 160 600 165"/>
+        <path class="sib" d="M0 168 C90 160 170 172 250 160 S430 150 600 148"/>
+        <path class="you" d="M0 172 C110 168 190 160 270 150 S400 90 600 20"/>
+      </svg>
+      <p class="eyebrow">A game about growth, with real data</p>
       <h1>Take-Off</h1>
-      <p class="lede">Live one economic reformer's 25-year career in a real country, with real data. Your choices matter, but less than you think. Most careers don't produce a take-off.</p>
+      <p class="lede">Take the seat. Spend 25 years trying to change a real country's path: short tenures, hard shocks, and the chance to shift the lives of millions. Take-offs are rare. Someone starts every one of them.</p>
     </div>
-    <div class="card stack">
-      <button class="btn primary block" id="btn-draw">Draw a country</button>
+    <div class="card cta stack">
+      <button class="btn primary block lg" id="btn-draw">Draw a country <span class="arrow">→</span></button>
       <button class="btn block" id="btn-continue" hidden>Continue your career</button>
       <p class="small muted" id="loading">Loading country data…</p>
+    </div>
+    <div class="facts">
+      <div class="fact"><b>130</b><span>real countries</span></div>
+      <div class="fact"><b>25</b><span>years in the seat</span></div>
+      <div class="fact"><b>4</b><span>siblings to beat</span></div>
+      <div class="fact"><b>0</b><span>invented numbers</span></div>
     </div>
     <div class="card settings">
       <label><span>Draw countries<br><span class="tiny muted">Weighted by population, or each country equally</span></span><span class="seg" data-setting="weighting"><button data-v="pop" class="on">By population</button><button data-v="equal">Equally</button></span></label>
@@ -31,15 +45,15 @@
       <label><span>Global shocks in historical years<br><span class="tiny muted">1982, 2008 and 2020 on their real dates, or rolled at random</span></span><span class="seg" data-setting="globalShocks"><button data-v="real" class="on">Real history</button><button data-v="random">Random</button></span></label>
     </div>
     <div class="card">
-      <h3>How it works</h3>
-      <ul class="small stack" style="padding-left: 18px; margin: 0">
-        <li>You start mid-career in a real low- or middle-income country, drawn at random, with its real starting conditions.</li>
-        <li>Each year you pick one focus and spend <span class="term" data-term="political capital">political capital</span> and <span class="term" data-term="budget">budget</span>. Shocks roll at real base rates. Reshuffles happen when they happen.</li>
-        <li>Four real sibling countries that started at your income run alongside you. Most of them won't take off either.</li>
-        <li>At the end, the game reruns your career to tell you how much was you and how much was luck.</li>
-      </ul>
+      <p class="eyebrow">How it works</p>
+      <ol class="steps">
+        <li><b>You are appointed</b> mid-career in a real low- or middle-income country, drawn at random, with its real starting hand: income, exports, power, ports, and what firms say blocks them.</li>
+        <li><b>Each year you pick one focus</b> and spend <span class="term" data-term="political capital">political capital</span> and <span class="term" data-term="budget">budget</span>. Shocks roll at real base rates. Reshuffles come when they come.</li>
+        <li><b>Four real siblings</b> that started at your income run alongside you. Some will take off. You will see which, and why.</li>
+        <li><b>At the end</b> the game reruns your career to show what your choices changed, what luck did, and which reforms outlived you.</li>
+      </ol>
     </div>
-    <footer>Data: World Bank WDI, Enterprise Surveys and Worldwide Governance Indicators. Every judgement call is listed on the <a href="methods.html">methods page</a>. No login, nothing leaves your browser.</footer>
+    <footer>A game by Jonathan Mazumdar, for people who work on growth. Data: World Bank WDI, Enterprise Surveys and Worldwide Governance Indicators. Every judgement call is on the <a href="methods.html">methods page</a>. No login; nothing leaves your browser.</footer>
   </section>
 
   <section id="draw" class="screen"></section>
@@ -47,7 +61,7 @@
   <section id="end" class="screen"></section>
 </div>
 
-<div class="modal" id="modal"><div class="box" id="modal-box"></div></div>
+<div class="modal" id="modal"><div class="box"><div class="handle"></div><div id="modal-box"></div></div></div>
 <div id="tip"></div>
 <div class="toast" id="toast"></div>
 <script type="module" src="src/app.js"></script>

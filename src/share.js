@@ -33,7 +33,7 @@ export async function renderShareImage({ name, startYear, endYear, series, stats
     sy += 84;
   }
   ctx.fillStyle = '#9aa0a6'; ctx.font = '16px -apple-system, Helvetica, Arial, sans-serif';
-  ctx.fillText('A 25-year career in economic reform, with real data. Siblings in grey.', 48, H - 24);
+  ctx.fillText('25 years in the seat, with real data. Siblings in grey. Play at jmazda.github.io/takeoff', 48, H - 24);
   return new Promise(res => c.toBlob(b => res(b), 'image/png'));
 }
 function wrap(ctx, text, x, y, maxW, lh) {
