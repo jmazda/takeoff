@@ -38,9 +38,10 @@ header.top .brand { display: inline-flex; align-items: center; gap: 8px; font-fa
 header.top .mark { width: 24px; height: 24px; color: var(--accent); }
 header.top nav a, header.top nav button { font-size: .85rem; font-weight: 500; color: var(--muted); margin-left: 16px; background: none; border: 0; cursor: pointer; text-decoration: none; padding: 0; }
 header.top nav a:hover, header.top nav button:hover { color: var(--ink); }
-.screen { display: none; } .screen.active { display: block; animation: fade .35s ease both; }
+.screen { display: none; } .screen.active { display: block; animation: fade .35s ease forwards; }
+@media (prefers-reduced-motion: reduce) { .screen.active, .modal .box, .hero-art .you { animation: none; } }
 @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; margin: 0 0 14px; box-shadow: var(--shadow); animation: fade .4s ease both; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; margin: 0 0 14px; box-shadow: var(--shadow); }
 .card h3 { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
 .card h3 small, .src { color: var(--muted); font-size: .72rem; font-weight: 500; letter-spacing: .02em; text-align: right; }
 .eyebrow { font-size: .72rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin: 0 0 8px; }
@@ -163,7 +164,7 @@ details summary:hover { color: var(--ink); }
 /* ---------- Modal ---------- */
 .modal { position: fixed; inset: 0; background: rgba(12,18,17,.5); backdrop-filter: blur(2px); display: none; align-items: flex-end; justify-content: center; z-index: 40; padding: 0; }
 .modal.open { display: flex; }
-.modal .box { background: var(--card); width: 100%; max-width: 620px; border-radius: 22px 22px 0 0; padding: 10px 18px 30px; max-height: 92vh; overflow: auto; animation: up .25s ease both; box-shadow: 0 -10px 40px rgba(0,0,0,.2); }
+.modal .box { background: var(--card); width: 100%; max-width: 620px; border-radius: 22px 22px 0 0; padding: 10px 18px 30px; max-height: 92vh; overflow: auto; animation: up .25s ease forwards; box-shadow: 0 -10px 40px rgba(0,0,0,.2); }
 .modal .handle { width: 40px; height: 4px; border-radius: 2px; background: var(--line2); margin: 0 auto 14px; }
 @keyframes up { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
 @media (min-width: 660px) { .modal { align-items: center; padding: 16px; } .modal .box { border-radius: 22px; } .modal .handle { display: none; } }
