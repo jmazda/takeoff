@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Take-Off</title>
+<meta name="description" content="Live one economic reformer's 25-year career in a real country, with real data. Most careers don't produce a take-off.">
+<link rel="stylesheet" href="styles.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><path d='M4 26 L14 16 L20 20 L28 6' stroke='%230f766e' stroke-width='4' fill='none' stroke-linecap='round'/></svg>">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="#" id="brand">Take-Off</a>
+    <nav><a href="methods.html">Methods</a><button id="nav-restart" hidden>Restart</button></nav>
+  </header>
+
+  <section id="home" class="screen active">
+    <div class="hero">
+      <h1>Take-Off</h1>
+      <p class="lede">Live one economic reformer's 25-year career in a real country, with real data. Your choices matter, but less than you think. Most careers don't produce a take-off.</p>
+    </div>
+    <div class="card stack">
+      <button class="btn primary block" id="btn-draw">Draw a country</button>
+      <button class="btn block" id="btn-continue" hidden>Continue your career</button>
+      <p class="small muted" id="loading">Loading country data…</p>
+    </div>
+    <div class="card settings">
+      <label><span>Draw countries<br><span class="tiny muted">Weighted by population, or each country equally</span></span><span class="seg" data-setting="weighting"><button data-v="pop" class="on">By population</button><button data-v="equal">Equally</button></span></label>
+      <label><span>Start year<br><span class="tiny muted">Recent: siblings are simulated. Historical: siblings follow real history</span></span><span class="seg" data-setting="era"><button data-v="any" class="on">Any</button><button data-v="recent">Recent</button><button data-v="historical">Historical</button></span></label>
+      <label><span>Global shocks in historical years<br><span class="tiny muted">1982, 2008 and 2020 on their real dates, or rolled at random</span></span><span class="seg" data-setting="globalShocks"><button data-v="real" class="on">Real history</button><button data-v="random">Random</button></span></label>
+    </div>
+    <div class="card">
+      <h3>How it works</h3>
+      <ul class="small stack" style="padding-left: 18px; margin: 0">
+        <li>You start mid-career in a real low- or middle-income country, drawn at random, with its real starting conditions.</li>
+        <li>Each year you pick one focus and spend <span class="term" data-term="political capital">political capital</span> and <span class="term" data-term="budget">budget</span>. Shocks roll at real base rates. Reshuffles happen when they happen.</li>
+        <li>Four real sibling countries that started at your income run alongside you. Most of them won't take off either.</li>
+        <li>At the end, the game reruns your career to tell you how much was you and how much was luck.</li>
+      </ul>
+    </div>
+    <footer>Data: World Bank WDI, Enterprise Surveys and Worldwide Governance Indicators. Every judgement call is listed on the <a href="methods.html">methods page</a>. No login, nothing leaves your browser.</footer>
+  </section>
+
+  <section id="draw" class="screen"></section>
+  <section id="play" class="screen"></section>
+  <section id="end" class="screen"></section>
+</div>
+
+<div class="modal" id="modal"><div class="box" id="modal-box"></div></div>
+<div id="tip"></div>
+<div class="toast" id="toast"></div>
+<script type="module" src="src/app.js"></script>
+</body>
+</html>

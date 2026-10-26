@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Take-Off · Methods</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="wrap methods">
+  <header class="top"><a class="brand" href="index.html">Take-Off</a><nav><a href="index.html">Play</a></nav></header>
+  <h1>Methods</h1>
+  <p class="lede muted">Every number in the game comes from public data or a stated assumption. This page lists both. If you are a growth economist and something here looks naive, that is exactly the feedback we want.</p>
+
+  <div class="card">
+    <h2>Data</h2>
+    <table class="assump">
+      <tr><th>Source</th><th>What it drives</th></tr>
+      <tr><td>World Development Indicators (World Bank)</td><td>Starting income (PPP 2021 $ from 1990; constant 2015 US$ from 1960), population, exports/GDP, merchandise export composition, employment shares, electricity access, debt, inflation, resource rents, enrolment, terms of trade, and the real income paths of sibling countries.</td></tr>
+      <tr><td>Enterprise Surveys (World Bank)</td><td>Outages per month, losses to outages, days to clear customs, and the share of firms naming each obstacle as their biggest. These set the constraints list and scale the payoff of power and customs reforms.</td></tr>
+      <tr><td>Worldwide Governance Indicators</td><td>Political stability (coup and conflict odds), voice and accountability (election turnover), government effectiveness (shown in the political setting).</td></tr>
+      <tr><td>Doing Business archive (to 2019), Logistics Performance Index</td><td>Shown in the starting hand for context.</td></tr>
+      <tr><td>Hausmann, Pritchett &amp; Rodrik (2005); Pritchett, Sen, Kar &amp; Raihan (2016)</td><td>How often growth accelerations start, how big they are, and how often they fade.</td></tr>
+      <tr><td>Powell &amp; Thyne coup dataset (summary rates only)</td><td>The coup base rate. The dataset itself could not be downloaded at build time, so the rate is a stated calibration scaled by WGI stability, not a per-country history.</td></tr>
+      <tr><td>Export-boom cases (public literature; Growth Teams Export Boom Atlas to be wired in)</td><td>The pioneer-firm stories and the boom growth and fade rates. Firms in the game are fictional.</td></tr>
+    </table>
+    <p class="small muted" style="margin-top:10px">Not yet used, and flagged in-game: the Atlas of Economic Complexity product space (replaced by a rule-based sector map built from the export basket), a cabinet tenure dataset such as WhoGov (replaced by stated hazard rates), and Penn World Table (WDI series are used instead because they are fetchable by API).</p>
+  </div>
+
+  <div class="card">
+    <h2>The model in one paragraph</h2>
+    <p>Each year, growth per person = a country prior + a small convergence term + the current regime (a growth spurt or a collapse) + the effects of reforms, capped + explicit shocks + noise. The prior is the country's own historical growth mean, shrunk toward the LMIC average, plus an offset for the shocks the model draws explicitly. Reforms are stocks from 0 to 1 that grow when someone works on them, decay when nobody does, and can be reversed by a successor. Their growth effects are convex in the stock and capped in total, so persistence helps and scattering does not. Policy mostly shifts odds: the chance a spurt starts, the chance it lasts, the chance an anchor firm lands. Exports and formal jobs follow income, with sector booms on top.</p>
+    <p>Siblings are four real countries with a similar income in the start year. For past start years they follow their real income data. For recent start years they are simulated with the same model and a default government, which is also what runs your country whenever you are not the minister.</p>
+    <p>At the end, the game reruns your career 40 times with your shocks and a default government, and 40 times with your choices and fresh shocks. The difference between you and the first set is your choices; the spread of the second set is your luck.</p>
+  </div>
+
+  <div class="card">
+    <h2>Every assumption</h2>
+    <p class="small muted">Values are live from the game's code. "Assumption" means we chose the number; the source says what it leans on.</p>
+    <table class="assump" id="assumptions"><tr><th>Parameter</th><th>Value</th><th>What it does</th><th>Source</th></tr></table>
+  </div>
+
+  <div class="card">
+    <h2>Seats and tenure</h2>
+    <table class="assump" id="seats"><tr><th>Seat</th><th>Annual exit hazard</th><th>Lever strength</th></tr></table>
+    <p class="small muted" style="margin-top:8px">Hazards double in election years and rise by half after a bad year. Successors keep a reform with a base probability plus a bonus for each year it has run and for having a constituency, minus a penalty for controversial reforms. Siblings and the background government use the same reform mechanics as the player.</p>
+  </div>
+
+  <div class="card">
+    <h2>What the game does not do</h2>
+    <ul class="small">
+      <li>It does not use a country's real history of coups, elections or droughts. Those roll at the country's base rates. Global shocks (1982, 1998, 2009, 2020) do follow real dates in historical start years, if you choose that setting.</li>
+      <li>It does not name living politicians. The player and every successor are fictional. So are the firms.</li>
+      <li>It does not know why any real sibling took off. When one did, the end screen says so and tells you to look it up.</li>
+      <li>It does not claim precision. Effects are capped so that skill helps a little, not a lot. The calibration target is that a thoughtful player beats the siblings slightly more often than a random one. Run <code>node tools/calibrate.mjs</code> to see the current numbers.</li>
+    </ul>
+  </div>
+  <footer>Take-Off is a free browser game by Growth Teams. Code and data pipeline are in the repository; the data file is rebuilt from the World Bank API with one command.</footer>
+</div>
+<script type="module">
+  import { A } from './src/assumptions.js';
+  import { SEATS } from './src/model.js';
+  const t = document.getElementById('assumptions');
+  for (const [k, v] of Object.entries(A)) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td><code>${k}</code></td><td class="v">${v.value} ${v.unit || ''}</td><td>${v.note}</td><td class="muted">${v.source}</td>`;
+    t.appendChild(tr);
+  }
+  const s = document.getElementById('seats');
+  for (const [k, v] of Object.entries(SEATS)) { const tr = document.createElement('tr'); tr.innerHTML = `<td>${v.long}</td><td class="v">${v.hazard ? Math.round(v.hazard * 100) + '%' : k === 'funder' ? 'your choice' : '–'}</td><td class="v">${v.mult}</td>`; s.appendChild(tr); }
+</script>
+</body>
+</html>
