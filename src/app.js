@@ -41,10 +41,10 @@ const sign = v => (v >= 0 ? '+' : '') + v.toFixed(1);
 const pct = v => (v >= 0 ? '+' : '') + Math.round(v) + '%';
 const T = (term, text) => `<span class="term" data-term="${term}">${text || term}</span>`;
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-function show(id) { document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === id)); window.scrollTo(0, 0); $('#nav-restart').hidden = id === 'home'; if (id === 'home' && app.db) renderHome(); }
+function show(id) { document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === id)); document.querySelector('.wrap').classList.toggle('wide', id !== 'home'); window.scrollTo(0, 0); $('#nav-restart').hidden = id === 'home'; if (id === 'home' && app.db) renderHome(); }
 function toast(msg) { const t = $('#toast'); t.textContent = msg; t.style.display = 'block'; clearTimeout(t._h); t._h = setTimeout(() => t.style.display = 'none', 2200); }
 function pips(n, max, cls) { let s = `<span class="pips ${cls}">`; for (let i = 0; i < max; i++) s += `<i class="${i < Math.round(n) ? 'on' : ''}"></i>`; return s + '</span>'; }
-function openModal(html) { $('#modal-box').innerHTML = html; $('#modal').classList.add('open'); }
+function openModal(html, size) { $('#modal-box').innerHTML = html; $('#modal .box').classList.toggle('wide', size === 'wide'); $('#modal').classList.add('open'); }
 function closeModal() { $('#modal').classList.remove('open'); $('#modal-box').innerHTML = ''; }
 
 // Glossary tooltips (tap or hover)
@@ -79,7 +79,7 @@ function startGame(country, startYear, seed, rng) {
   const state = M.createState({ country, startYear, seed, settings: app.settings, db: app.db });
   state.hand = startingHand(country, startYear);
   const sibs = pickSiblings(app.db, country, startYear, rng).map((s, j) => sibling(s, startYear, state.unit, seed + 101 * (j + 1)));
-  app.game = { state, country, siblings: sibs, ctx, pausesDone: {}, speed: 1, playing: false, auto: false, timer: null, selected: null, sector: state.bestSector, lastEntry: null };
+  app.game = { state, country, siblings: sibs, ctx, pausesDone: {}, speed: 1, running: false, auto: false, timer: null, selected: null, sector: state.bestSector, lastEntry: null, phase: 'decide', month: 0, feed: [] };
   save();
   renderDraw();
   show('draw');
@@ -99,9 +99,9 @@ function restoreGame(sv) {
   state.hand = startingHand(country, state.startYear);
   app.settings = sv.settings || app.settings;
   const sibs = sv.siblings.map(s => ({ iso3: s.iso, name: app.db.byIso[s.iso]?.name || s.iso, path: s.path, simulated: s.simulated }));
-  app.game = { state, country, siblings: sibs, ctx: makeCtx(country), pausesDone: sv.pausesDone || {}, speed: 1, playing: false, auto: false, timer: null, selected: null, sector: state.bestSector, lastEntry: state.log[state.log.length - 1] || null };
+  app.game = { state, country, siblings: sibs, ctx: makeCtx(country), pausesDone: sv.pausesDone || {}, speed: 1, running: false, auto: false, timer: null, selected: null, sector: state.bestSector, lastEntry: state.log[state.log.length - 1] || null, phase: 'decide', month: 0, feed: [] };
   if (state.pendingYear) { state.pendingYear = null; state.current = null; } // a reload mid-year: that year is replayed
-  if (state.ended) { renderEnd(); show('end'); } else { renderPlay(); show('play'); checkPauses(); }
+  if (state.ended) { renderEnd(); show('end'); } else { app.game.running = true; renderPlay(); show('play'); beginYear(); }
   return true;
 }
 
@@ -117,13 +117,17 @@ function renderDraw() {
   const sibs = g.siblings.map(s => `<li>${s.name}${s.simulated ? ' <span class="tiny muted">(simulated)</span>' : ''}</li>`).join('');
   const histNote = st.startYear < c.lastYear - 5 ? `<p class="small muted">A historical start. Your siblings follow their real paths from ${st.startYear}. Your country's path is yours to change. Firm-survey and governance numbers below are the latest available, not ${st.startYear} values.</p>` : '';
   const prior = `${(st.prior * 100).toFixed(1)}%`;
+  const odds = app.settings.weighting === 'pop' ? `drawn by population` : `drawn with equal odds, 1 in ${app.db.countries.length}`;
   $('#draw').innerHTML = `
+    <div class="reveal" id="reveal"><p class="eyebrow">Choosing your country</p><h1>${esc(c.name)}</h1><p class="small muted">${odds} · start year ${st.startYear}</p></div>
     <div class="countrycard">
-      <p class="eyebrow">${esc(c.regionName.trim())} · ${c.income === 'LIC' ? 'Low income' : c.income === 'LMC' ? 'Lower-middle income' : 'Upper-middle income'}</p>
+      <p class="eyebrow">Letter of appointment · ${c.iso3} · ${st.startYear} · ${esc(c.regionName.trim())} · ${c.income === 'LIC' ? 'Low income' : c.income === 'LMC' ? 'Lower-middle income' : 'Upper-middle income'}</p>
       <h1>${esc(c.name)}</h1>
       <div class="sub">It is ${st.startYear}. You have just been appointed ${esc(seatName.replace(/^Head of the /, 'head of the ').replace(/^Director-General/, 'director-general').replace(/^Minister/, 'minister'))}.</div>
+      <div class="row" style="margin-top:16px; align-items:center"><button class="btn primary lg" id="btn-begin">Begin your career <span class="arrow">→</span></button><span class="small" style="opacity:.85">Your starting hand is below. Read it, or just go. A full career takes 30–45 minutes at 1×.</span></div>
     </div>
     ${histNote}
+    <div class="hand-grid">
     <div class="card hand">
       <h3>Income <small>${inc.label}</small></h3>
       <div class="kv"><span>GDP per person</span><b>${fmtMoney(inc.value)}</b><span>Population</span><b>${fmtK(h.pop)}</b><span>Exports</span><b>${Math.round(h.exportsGdp)}% of GDP</b><span>Growth per person, ${st.startYear < 1995 ? '1960' : '1990'}–2023</span><b>${(h.history.growth_1990_2023.mean * 100).toFixed(1)}%/yr</b></div>
@@ -166,42 +170,82 @@ function renderDraw() {
       <p class="small">${st.overvalued ? 'The currency looks overvalued and a parallel market is open.' : 'No obvious exchange-rate misalignment right now.'} <span class="tiny muted">(a judgement call drawn from inflation)</span></p>
     </div>
     <div class="card hand">
-      <h3>Your siblings <small>same start, similar income</small></h3>
+      <h3>Appointed the same year <small>four real countries at your income</small></h3>
       <ul class="small" style="margin:0; padding-left:18px">${sibs}</ul>
     </div>
-    <button class="btn primary block" id="btn-begin">Begin your career</button>
+    </div>
+    <button class="btn primary block lg" id="btn-begin2">Begin your career <span class="arrow">→</span></button>
     <p class="tiny muted" style="margin-top:10px">You will be reshuffled when the tenure data says so, not when you choose. Use the time.</p>`;
-  $('#btn-begin').onclick = () => { renderPlay(); show('play'); checkPauses(); };
+  const begin = () => { app.game.running = true; renderPlay(); show('play'); beginYear(); };
+  setTimeout(() => { const r = $('#reveal'); if (r) r.classList.add('done'); }, 2200);
+  $('#btn-begin').onclick = begin; $('#btn-begin2').onclick = begin;
 }
 
 // ---------- Play screen ----------
+// Time runs: a year is twelve ticks of the clock. Decisions stop the clock and arrive as popups.
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const YEAR_MS = { 1: 7200, 2: 3600, 4: 1800, 8: 900, 16: 450 };
+
 function renderPlay() {
   const g = app.game, st = g.state;
   const seat = M.SEATS[st.career.seat];
+  g.month = g.month || 0;
   const html = `
     <div class="topbar">
       <div class="row spread" style="align-items:flex-start">
-        <div><div class="yr">${st.year} <span class="muted">year ${st.t + 1} of ${M.HORIZON}</span></div><div class="seat">${esc(seat.long)}${st.career.seat !== 'out' ? ` · year ${st.career.seatYears + 1} in seat` : ` · ${st.career.outYears} ${st.career.outYears === 1 ? 'year' : 'years'} out`}</div></div>
-        <div class="meters"><span class="meter">${T('political capital', 'Capital')} ${pips(st.career.pc, 10, '')}</span><span class="meter">${T('budget', 'Budget')} ${pips(st.career.budget, 8, 'budget')}</span></div>
+        <div>
+          <div class="yr">${st.year} <span class="muted">year ${st.t + 1} of ${M.HORIZON} · 1 year ≈ ${Math.round(YEAR_MS[g.speed] / 1000)} s</span></div>
+          <div class="seat">${esc(seat.long)}${st.career.seat !== 'out' ? ` · year ${st.career.seatYears + 1} in seat` : ` · ${st.career.outYears} ${st.career.outYears === 1 ? 'year' : 'years'} out`}</div>
+        </div>
+        <div class="meters"><span class="meter">${T('political capital', 'Political capital')} <span class="tiny muted">favours &amp; goodwill</span> ${pips(st.career.pc, 10, '')}</span><span class="meter">${T('budget', 'Budget')} <span class="tiny muted">money you control</span> ${pips(st.career.budget, 8, 'budget')}</span></div>
+      </div>
+      <div class="clockrow">
+        <div class="months" id="months">${MONTHS.map((m, i) => `<i class="${i < g.month ? 'on' : i === g.month ? 'now' : ''}" title="${m}"></i>`).join('')}</div>
+        <div class="monthlabel" id="monthlabel">${clockLabel()}</div>
+        <div class="speed" id="controls"></div>
       </div>
       <div class="track">${Array.from({ length: M.HORIZON }, (_, i) => `<i class="${i < st.t ? 'on' : i === st.t ? 'now' : ''}"></i>`).join('')}</div>
     </div>
-    <div class="card chartcard"><canvas class="chart" id="chart"></canvas><div class="legend"><span><i style="background:var(--you)"></i>${esc(g.country.name)}</span><span><i style="background:var(--sib)"></i>siblings</span>${regimeBadges(st)}</div></div>
-    <div class="stats">
-      <div class="stat"><div class="v">${fmtMoney(st.income)}</div><div class="k">income per person</div></div>
-      <div class="stat"><div class="v">${fmtBig(st.exports)}</div><div class="k">exports <span class="${st.exports >= st.exports0 ? 'pos' : 'neg'}">${pct(100 * (st.exports / st.exports0 - 1))}</span></div></div>
-      <div class="stat"><div class="v">${(st.jobs - st.jobs0 >= 0 ? '+' : '') + fmtK(st.jobs - st.jobs0)}</div><div class="k">formal jobs beyond population growth</div></div>
-    </div>
-    <div id="lastyear"></div>
-    <div class="card" id="thisyear"></div>
-    <div class="card"><details><summary>Reforms and who kept them</summary><div id="reforms" style="margin-top:8px"></div></details></div>
-    <div class="card"><details><summary>Career log</summary><ul class="log" id="history" style="margin-top:8px"></ul></details></div>`;
+    <div class="play-grid">
+      <div class="col left">
+        <div class="card chartcard" id="c-chart"><p class="eyebrow">Income per person, ${st.startYear} = 100</p><canvas class="chart" id="chart"></canvas><div class="legend"><span><i style="background:var(--you)"></i>${esc(g.country.name)}</span><span><i style="background:var(--sib)"></i>siblings</span>${regimeBadges(st)}</div></div>
+        <div class="stats" id="c-stats">
+          <div class="stat"><div class="v">${fmtMoney(st.income)}</div><div class="k">income per person</div></div>
+          <div class="stat"><div class="v">${fmtBig(st.exports)}</div><div class="k">exports <span class="${st.exports >= st.exports0 ? 'pos' : 'neg'}">${pct(100 * (st.exports / st.exports0 - 1))}</span></div></div>
+          <div class="stat"><div class="v">${(st.jobs - st.jobs0 >= 0 ? '+' : '') + fmtK(st.jobs - st.jobs0)}</div><div class="k">formal jobs beyond population growth</div></div>
+        </div>
+        <div class="card" id="c-reforms"><details open><summary>Reforms and who kept them</summary><div id="reforms" style="margin-top:8px"></div></details></div>
+        <div class="card" id="c-log"><details><summary>Career log</summary><ul class="log" id="history" style="margin-top:8px"></ul></details></div>
+      </div>
+      <div class="col right">
+        <div class="card now" id="now"></div>
+        <div id="lastyear"></div>
+      </div>
+    </div>`;
   $('#play').innerHTML = html;
   renderChart($('#chart'));
+  renderControls();
+  renderNow();
   renderLastYear();
-  renderThisYear();
   renderReforms();
   renderHistory();
+}
+function clockLabel() {
+  const g = app.game, st = g.state;
+  if (g.phase === 'running') return `${MONTHS[Math.min(11, g.month)]} ${st.year + 1}`;
+  if (g.phase === 'decide') return `January ${st.year + 1} · waiting for your decision`;
+  if (g.phase === 'event') return `${MONTHS[Math.min(11, g.month)]} ${st.year + 1} · a decision is needed`;
+  return `${st.year}`;
+}
+function renderControls() {
+  const g = app.game;
+  const el = $('#controls'); if (!el) return;
+  el.innerHTML = `<button id="btn-play" class="${g.running ? 'on' : ''}" title="${g.running ? 'Pause' : 'Play'}">${g.running ? '❚❚ Pause' : '▶ Play'}</button>${[1, 2, 4, 8, 16].map(s => `<button data-speed="${s}" class="${g.speed === s ? 'on' : ''}">${s}×</button>`).join('')}<button id="btn-next" title="Run at full speed until something needs you">Next decision »</button><button id="btn-auto" class="${g.auto ? 'on' : ''}" title="Let a default government play">Auto</button><button id="btn-pauses" class="${g.pausesOff ? '' : 'on'}" title="Stop at five career moments to write down a thought">✎ Pauses</button>`;
+  $('#btn-play').onclick = () => { if (g.running) pauseClock(); else resumeClock(); };
+  $('#btn-next').onclick = () => { g.skipTo = true; g.speedBefore = g.speed; g.speed = 16; if (g.phase === 'decide') openDecision(); else resumeClock(); renderControls(); };
+  $('#btn-pauses').onclick = () => { g.pausesOff = !g.pausesOff; renderControls(); };
+  $('#btn-auto').onclick = () => { g.auto = !g.auto; if (g.auto) { closeModal(); if (g.phase === 'decide') beginYear(); else resumeClock(); } renderControls(); renderNow(); };
+  el.querySelectorAll('[data-speed]').forEach(b => b.onclick = () => { g.speed = +b.dataset.speed; renderControls(); });
 }
 function regimeBadges(st) {
   const b = [];
@@ -220,30 +264,23 @@ function renderChart(canvas, big = false) {
   if (g.refPath) series.push({ values: g.refPath.values, color: getComputedStyle(document.documentElement).getPropertyValue('--real').trim(), width: 2, dash: [5, 4], label: g.refPath.label });
   drawChart(canvas, { series, startYear: st.startYear });
 }
-function renderThisYear() {
-  const g = app.game, st = g.state;
-  const menu = M.menuFor(st);
+// The "now" card: what is happening this year as the clock runs, or a prompt to decide.
+function renderNow() {
+  const g = app.game, st = g.state, el = $('#now'); if (!el) return;
   const seatHint = { minister: 'Big levers, little time.', adviser: 'Smaller levers, more continuity.', ipa: 'Close to firms, weak on policy.', funder: 'No direct policy, long view.', out: 'The country keeps going. So do you.' }[st.career.seat];
-  const opts = menu.map(o => `<button class="opt ${g.selected === o.id ? 'on' : ''}" data-id="${o.id}" ${o.affordable ? '' : 'disabled'}>
-      <span class="ico">${iconFor(o)}</span><span class="t">${esc(o.label)}</span><span class="cost">${o.pc ? o.pc + ' capital' : ''}${o.pc && o.budget ? ' · ' : ''}${o.budget ? o.budget + ' budget' : ''}${!o.pc && !o.budget ? 'free' : ''}</span>
-      <span class="b">${esc(o.blurb)}</span>${o.why ? `<span class="why">${esc(o.why)}</span>` : ''}</button>`).join('');
-  const sel = menu.find(o => o.id === g.selected);
-  const sectorRow = sel && sel.sector ? `<div style="margin-top:10px"><div class="small muted" style="margin-bottom:6px">Which sector?</div><div class="chips">${Object.entries(st.prox).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([k, p]) => `<button class="chip ${g.sector === k ? 'on' : ''}" data-sector="${k}">${SECTORS[k].name} <span class="${g.sector === k ? '' : 'muted'}">${Math.round(p * 100)}%</span></button>`).join('')}</div><div class="tiny muted" style="margin-top:4px">Percentages are proximity to your current exports: the odds an anchor firm lands scale with it.</div></div>` : '';
-  $('#thisyear').innerHTML = `
-    <p class="eyebrow">This year · ${st.year} → ${st.year + 1}</p><p class="small muted" style="margin-top:-4px">${esc(seatHint)}</p>
-    <div class="menu">${opts}</div>
-    ${sectorRow}
-    <div class="row spread" style="margin-top:12px">
-      <button class="btn primary" id="btn-run" ${g.selected ? '' : 'disabled'}>Run the year</button>
-      <div class="speed"><button id="btn-play">${g.playing ? '❚❚ Pause' : '▶ Fast-forward'}</button>${[1, 2, 4, 8, 16].map(s => `<button data-speed="${s}" class="${g.speed === s ? 'on' : ''}">${s}x</button>`).join('')}<button id="btn-auto" class="${g.auto ? 'on' : ''}">Auto</button></div>
-    </div>
-    <p class="tiny muted" style="margin:8px 0 0">Fast-forward repeats your last focus when it fits the seat and you can afford it, and stops for decisions. Auto plays the whole career with a reasonable default government.</p>`;
-  $('#thisyear').querySelectorAll('.opt').forEach(b => b.onclick = () => { g.selected = b.dataset.id; renderThisYear(); });
-  $('#thisyear').querySelectorAll('[data-sector]').forEach(b => b.onclick = () => { g.sector = b.dataset.sector; renderThisYear(); });
-  $('#btn-run').onclick = () => runYear();
-  $('#btn-play').onclick = () => { g.playing = !g.playing; if (g.playing) scheduleNext(0); else stopTimer(); renderThisYear(); };
-  $('#btn-auto').onclick = () => { g.auto = !g.auto; g.playing = g.auto; if (g.auto) scheduleNext(0); else stopTimer(); renderThisYear(); };
-  $('#thisyear').querySelectorAll('[data-speed]').forEach(b => b.onclick = () => { g.speed = +b.dataset.speed; renderThisYear(); });
+  if (g.phase === 'decide' && !g.auto) {
+    el.innerHTML = `<p class="eyebrow">January ${st.year + 1} · the clock is stopped</p>
+      <h2 style="font-size:1.3rem">Your focus for ${st.year + 1}?</h2>
+      <p class="small muted">${esc(seatHint)} Pick one thing to push this year; the rest of government carries on without you.</p>
+      <button class="btn primary lg block" id="btn-open-decision">Choose your focus <span class="arrow">→</span></button>`;
+    $('#btn-open-decision').onclick = openDecision;
+    return;
+  }
+  const feed = (g.feed || []).map(f => `<div class="shock"><span><span class="mo">${MONTHS[f.month].slice(0, 3)}</span> ${esc(f.text)}</span>${f.ppt ? `<span class="ppt ${f.ppt > 0 ? 'pos' : 'neg'}">${sign(f.ppt)} pt</span>` : ''}</div>`).join('');
+  const focus = st.current ? `${esc(st.current.option.label)}${st.current.option.sector ? ' · ' + SECTORS[st.current.sector].name : ''}` : (g.auto ? 'the default government decides' : '');
+  el.innerHTML = `<p class="eyebrow">${st.year + 1} in progress ${g.auto ? '· auto' : ''}</p>
+    <div class="small"><b>Focus:</b> ${focus || '–'}</div>
+    <div class="feed" style="margin-top:8px">${feed || '<p class="small muted" style="margin:0">Nothing yet. Most months are quiet.</p>'}</div>`;
 }
 function renderLastYear() {
   const g = app.game, e = g.lastEntry;
@@ -255,7 +292,7 @@ function renderLastYear() {
   const career = e.career.map(n => `<div class="shock"><span>${esc(n.text)}</span></div>`).join('');
   const succ = g.state.flags.lastSuccessor && e.career.some(n => n.id === 'left') ? `<div class="small" style="margin-top:6px">Your successor ${g.state.flags.lastSuccessor.length ? g.state.flags.lastSuccessor.map(o => `<span class="pill ${o.kept ? '' : 'bad'}">${o.kept ? 'kept' : 'reversed'} ${M.LEVER_INFO[o.lever].name.toLowerCase()}</span>`).join(' ') : 'found nothing worth reversing.'}</div>` : '';
   el.innerHTML = `<div class="card yearcard">
-    <p class="eyebrow" style="display:flex;justify-content:space-between"><span>${e.year - 1} → ${e.year}</span><span class="muted" style="text-transform:none;letter-spacing:0;font-weight:500">${e.choice ? 'focus: ' + esc(e.choice.label) : ''}</span></p>
+    <p class="eyebrow" style="display:flex;justify-content:space-between"><span>${e.year - 1} → ${e.year} · last year</span><span class="muted" style="text-transform:none;letter-spacing:0;font-weight:500">${e.choice ? 'focus: ' + esc(e.choice.label) : ''}</span></p>
     <p class="sum">${esc(e.summary)}</p>
     ${shocks}${events}${career}${succ}
     <details class="why" style="margin-top:8px"><summary>Why did this happen?</summary>${whyPanel(e)}</details>
@@ -283,66 +320,136 @@ function renderHistory() {
   el.innerHTML = [...g.state.log].reverse().map(e => `<li><span class="y">${e.year}</span>${esc(e.summary)} <span class="muted">${e.choice ? '· ' + esc(e.choice.label) : ''}</span></li>`).join('') || '<li class="muted small">Nothing yet.</li>';
 }
 
+// ---------- The decision popup ----------
+function openDecision() {
+  const g = app.game, st = g.state;
+  if (g.skipTo) { g.skipTo = false; g.speed = g.speedBefore || 1; renderControls(); }
+  const menu = M.menuFor(st);
+  const seatHint = { minister: 'Big levers, little time.', adviser: 'Smaller levers, more continuity.', ipa: 'Close to firms, weak on policy.', funder: 'No direct policy, long view.', out: 'The country keeps going. So do you.' }[st.career.seat];
+  const opts = menu.map(o => `<button class="opt ${g.selected === o.id ? 'on' : ''}" data-id="${o.id}" ${o.affordable ? '' : 'disabled'}>
+      <span class="ico">${iconFor(o)}</span><span class="t">${esc(o.label)}</span><span class="cost">${o.pc ? o.pc + ' political capital' : ''}${o.pc && o.budget ? '<br>' : ''}${o.budget ? o.budget + ' budget' : ''}${!o.pc && !o.budget ? 'free' : ''}</span>
+      <span class="b">${esc(o.blurb)}</span>${o.why ? `<span class="why">${esc(o.why)}</span>` : ''}</button>`).join('');
+  const sel = menu.find(o => o.id === g.selected);
+  const sectorRow = sel && sel.sector ? `<div style="margin-top:10px"><div class="small muted" style="margin-bottom:6px">Which sector?</div><div class="chips">${Object.entries(st.prox).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([k, p]) => `<button class="chip ${g.sector === k ? 'on' : ''}" data-sector="${k}">${SECTORS[k].name} <span class="${g.sector === k ? '' : 'muted'}">${Math.round(p * 100)}%</span></button>`).join('')}</div><div class="tiny muted" style="margin-top:4px">Percentages are proximity to your current exports: the odds an anchor firm lands scale with it.</div></div>` : '';
+  const last = g.lastEntry ? `<p class="small muted" style="margin:0 0 10px"><b>Last year:</b> ${esc(g.lastEntry.summary)}</p>` : '';
+  openModal(`<p class="eyebrow">January ${st.year + 1} · year ${st.t + 1} of ${M.HORIZON} · ${esc(M.SEATS[st.career.seat].long)}</p>
+    <h2>Pick one focus for ${st.year + 1}</h2>
+    ${last}
+    <div class="row small muted" style="margin-bottom:10px; gap:14px"><span>${esc(seatHint)}</span><span class="meter">Political capital ${pips(st.career.pc, 10, '')}</span><span class="meter">Budget ${pips(st.career.budget, 8, 'budget')}</span></div>
+    <div class="menu">${opts}</div>
+    ${sectorRow}
+    <div class="row spread" style="margin-top:14px">
+      <button class="btn primary lg" id="btn-run" ${g.selected ? '' : 'disabled'}>${g.selected ? 'Run the year <span class="arrow">→</span>' : 'Pick a focus first'}</button>
+      <button class="btn ghost" id="btn-board">Look at the board first</button>
+    </div>`, 'wide');
+  const box = $('#modal-box');
+  box.querySelectorAll('.opt').forEach(b => b.onclick = () => { g.selected = b.dataset.id; openDecision(); });
+  box.querySelectorAll('[data-sector]').forEach(b => b.onclick = () => { g.sector = b.dataset.sector; openDecision(); });
+  $('#btn-run').onclick = () => {
+    if (st.t === 0 && !g.pausesDone.first_seat) { closeModal(); checkPauses(() => startYear()); return; }
+    startYear();
+  };
+  $('#btn-board').onclick = () => { closeModal(); renderNow(); };
+}
+
 // ---------- Year loop ----------
-function stopTimer() { const g = app.game; if (g && g.timer) { clearTimeout(g.timer); g.timer = null; } }
-function scheduleNext(delay) {
-  const g = app.game; stopTimer();
-  if (!g.playing || g.state.ended || $('#modal').classList.contains('open')) return;
-  g.timer = setTimeout(() => {
-    g.timer = null; if (!g.playing || g.state.ended) return;
-    try { autoPick(); runYear(); } catch (e) { console.error('year loop failed', e); g.playing = false; g.auto = false; toast('Something went wrong this year. See the console.'); renderThisYear(); }
-  }, delay == null ? SPEEDS[g.speed] : delay);
+function beginYear() {
+  const g = app.game, st = g.state;
+  if (st.ended) return;
+  g.phase = 'decide'; g.month = 0; g.feed = []; g.eventShown = false;
+  renderControls(); renderNow(); updateClock();
+  if (g.auto) { autoPick(); startYear(); }
+  else if (!g.boardFirst) openDecision();
 }
 function autoPick() {
   const g = app.game, st = g.state;
-  const menu = M.menuFor(st);
-  if (g.auto) { const ch = M.autoChoose(st, g.ctx, menu, st.rng.career); g.selected = ch.optionId; g.sector = ch.sector; return; }
-  const last = st.choices[st.choices.length - 1];
-  const same = last && menu.find(o => o.id === last.id && o.affordable);
-  if (same) { g.selected = same.id; return; }
-  const ch = M.autoChoose(st, g.ctx, menu, st.rng.career); g.selected = ch.optionId; g.sector = ch.sector;
+  const ch = M.autoChoose(st, g.ctx, M.menuFor(st), st.rng.career);
+  g.selected = ch.optionId; g.sector = ch.sector;
 }
-function runYear() {
+function startYear() {
   const g = app.game, st = g.state;
-  if (!g.selected || st.ended) return;
   const opt = M.OPTIONS_BY_ID[g.selected];
-  if (!opt || opt.seat !== st.career.seat) { g.selected = null; renderThisYear(); return; }
+  if (!opt || opt.seat !== st.career.seat) { g.selected = null; g.phase = 'decide'; if (!g.auto) openDecision(); return; }
+  closeModal();
   M.chooseFocus(st, g.selected, g.sector);
   M.rollYear(st, g.ctx);
-  if (st.pending) {
-    if (g.auto) { M.resolveEvent(st, g.ctx, st.pending.autoChoice ?? 0); finishYear(); }
-    else showEvent();
-  } else finishYear();
+  // Spread this year's happenings across the months so the clock has something to show.
+  const P = st.pendingYear;
+  P.shocks.forEach((sh, i) => { sh.month = Math.min(10, Math.floor((i + 1) * 11 / (P.shocks.length + 1))); });
+  g.eventMonth = st.pending ? 6 : null;
+  g.month = 0; g.feed = []; g.phase = 'running';
+  save();
+  renderNow(); renderControls(); updateClock();
+  resumeClock();
 }
-function finishYear() {
+function updateClock() {
+  const g = app.game;
+  const m = $('#months'); if (m) m.querySelectorAll('i').forEach((el, i) => { el.className = i < g.month ? 'on' : i === g.month && g.phase === 'running' ? 'now' : ''; });
+  const l = $('#monthlabel'); if (l) l.textContent = clockLabel();
+}
+function resumeClock() {
+  const g = app.game;
+  if (g.state.ended) return;
+  if (g.phase === 'decide') { g.running = true; renderControls(); if (g.auto) { autoPick(); startYear(); } else openDecision(); return; }
+  g.running = true; renderControls(); scheduleTick();
+}
+function pauseClock() { const g = app.game; g.running = false; if (g.timer) { clearTimeout(g.timer); g.timer = null; } renderControls(); }
+function scheduleTick() {
+  const g = app.game; if (g.timer) clearTimeout(g.timer);
+  g.timer = setTimeout(tick, YEAR_MS[g.speed] / 12);
+}
+function tick() {
+  const g = app.game, st = g.state;
+  g.timer = null;
+  if (!g.running || g.phase !== 'running') return;
+  try {
+    const P = st.pendingYear;
+    // Reveal what this month brought.
+    for (const sh of P.shocks) if (sh.month === g.month && !sh.shown) { sh.shown = true; g.feed.push(sh); if (Math.abs(sh.ppt) >= 1.5 || ['coup', 'boom', 'accel', 'debt', 'pandemic'].includes(sh.id)) toast(sh.text); }
+    renderNow();
+    if (g.eventMonth === g.month && st.pending && !g.eventShown) {
+      g.eventShown = true;
+      if (g.auto) { M.resolveEvent(st, g.ctx, st.pending.autoChoice ?? 0); const ev = P.eventEffects[P.eventEffects.length - 1]; g.feed.push({ month: g.month, text: `${ev.title}: ${ev.result}`, ppt: ev.ppt }); renderNow(); }
+      else { g.phase = 'event'; pauseClock(); updateClock(); showEvent(); return; }
+    }
+    g.month++;
+    updateClock();
+    if (g.month >= 12) endYear(); else scheduleTick();
+  } catch (e) { console.error('year loop failed', e); pauseClock(); toast('Something went wrong this year. See the console.'); }
+}
+function endYear() {
   const g = app.game, st = g.state;
   const seatBefore = st.career.seat;
   const entry = M.closeYear(st, g.ctx);
   g.lastEntry = entry;
   if (st.career.seat !== seatBefore) g.selected = null; else if (g.selected && !M.menuFor(st).find(o => o.id === g.selected && o.affordable)) g.selected = null;
+  g.phase = 'closed'; g.month = 12;
   save();
-  if (st.ended) { stopTimer(); g.playing = false; checkPauses(() => { renderEnd(); show('end'); }); return; }
+  if (st.ended) { pauseClock(); g.running = false; checkPauses(() => { renderEnd(); show('end'); }); return; }
   renderPlay();
-  checkPauses(() => scheduleNext());
+  const next = () => { if (g.running) beginYear(); else { g.phase = 'decide'; g.month = 0; renderNow(); updateClock(); } };
+  if (g.auto) { next(); return; }
+  checkPauses(() => { g.timer = setTimeout(next, Math.min(1500, YEAR_MS[g.speed] / 4)); });
 }
 function showEvent() {
   const g = app.game, st = g.state, ev = st.pending;
-  stopTimer();
-  openModal(`<div class="tiny muted">${st.year + 1} · a decision</div><h2>${esc(ev.title)}</h2><p>${esc(ev.text)}</p>
-    ${ev.options.map((o, i) => { const ok = (o.pc || 0) <= st.career.pc && (o.budget || 0) <= st.career.budget; return `<button class="evopt" data-i="${i}" ${ok ? '' : 'disabled'}><span>${esc(o.label)}</span><span class="muted small">${o.pc ? o.pc + ' capital' : ''}${o.pc && o.budget ? ' · ' : ''}${o.budget ? o.budget + ' budget' : ''}</span></button>`; }).join('')}
+  if (g.skipTo) { g.skipTo = false; g.speed = g.speedBefore || 1; renderControls(); }
+  openModal(`<p class="eyebrow">${MONTHS[g.month]} ${st.year + 1} · the clock is stopped</p><h2>${esc(ev.title)}</h2><p>${esc(ev.text)}</p>
+    ${ev.options.map((o, i) => { const ok = (o.pc || 0) <= st.career.pc && (o.budget || 0) <= st.career.budget; return `<button class="evopt" data-i="${i}" ${ok ? '' : 'disabled'}><span>${esc(o.label)}</span><span class="muted small">${o.pc ? o.pc + ' political capital' : ''}${o.pc && o.budget ? ' · ' : ''}${o.budget ? o.budget + ' budget' : ''}</span></button>`; }).join('')}
     <p class="tiny muted" style="margin-top:10px">The odds of this event come from your seat, your reform stock and the country's conditions. Every firm and person in it is fictional.</p>`);
   $('#modal-box').querySelectorAll('.evopt').forEach(b => b.onclick = () => {
     const res = M.resolveEvent(st, g.ctx, +b.dataset.i);
-    openModal(`<h2>${esc(ev.title)}</h2><p>${esc(res.text)}</p><button class="btn primary block" id="ev-ok">Continue</button>`);
-    $('#ev-ok').onclick = () => { closeModal(); finishYear(); };
+    g.feed.push({ month: g.month, text: `${ev.title}: you chose “${b.querySelector('span').textContent}”. ${res.text}`, ppt: res.ppt });
+    openModal(`<p class="eyebrow">${esc(ev.title)}</p><h2 style="font-size:1.25rem">${esc(res.text)}</h2><button class="btn primary block lg" id="ev-ok">Back to the year <span class="arrow">→</span></button>`);
+    $('#ev-ok').onclick = () => { closeModal(); g.phase = 'running'; g.month++; updateClock(); renderNow(); if (g.month >= 12) endYear(); else resumeClock(); };
   });
 }
 // The five career moments.
 function checkPauses(done) {
   const g = app.game, st = g.state;
-  const due = PAUSES.find(p => !g.pausesDone[p.id] && p.when(st));
+  const due = PAUSES.find(p => !g.pausesDone[p.id] && p.when(st) && (!g.auto || p.id === 'year25') && (!g.pausesOff || p.id === 'year25'));
   if (!due) { if (done) done(); return; }
-  g.pausesDone[due.id] = true; stopTimer();
+  g.pausesDone[due.id] = true; if (g.timer) { clearTimeout(g.timer); g.timer = null; }
   openModal(`<div class="tiny muted">A pause · ${esc(due.title)}</div><h2>${esc(due.q)}</h2><p class="small muted">One line is enough. Your answers appear on the end screen. Nothing is sent anywhere.</p>
     <textarea id="pause-answer" placeholder="Your answer"></textarea>
     <div class="row" style="margin-top:10px"><button class="btn primary" id="pause-save">Save</button><button class="btn ghost" id="pause-skip">Skip</button></div>`);
@@ -366,7 +473,7 @@ function renderEnd() {
   const careerLine = `${st.career.history.filter(h => !['out', 'funder'].includes(h.seat)).length} government seats, ${st.career.reshuffles} reshuffles, ${st.career.outYears} years out of office, ${st.elections} elections, ${st.log.filter(e => e.shocks.some(s => s.id === 'coup')).length} coup attempts, ${st.booms.filter(b => b.byYou).length} pioneer firms landed on your watch.`;
   $('#end').innerHTML = `
     <div class="countrycard"><p class="eyebrow">${st.startYear}–${endYear} · your career</p><h1>${esc(c.name)}</h1><div class="sub">${esc(verdict)}</div></div>
-    <div class="card chartcard"><canvas class="chart big" id="endchart"></canvas><div class="legend"><span><i style="background:var(--you)"></i>${esc(c.name)}</span><span><i style="background:var(--sib)"></i>siblings${sibs.some(s => s.simulated) ? ' (simulated)' : ' (real history)'}</span><span id="ref-legend"></span></div></div>
+    <div class="card chartcard"><p class="eyebrow">Income per person, ${st.startYear} = 100</p><canvas class="chart big" id="endchart"></canvas><div class="legend"><span><i style="background:var(--you)"></i>${esc(c.name)}</span><span><i style="background:var(--sib)"></i>siblings${sibs.some(s => s.simulated) ? ' (simulated)' : ' (real history)'}</span><span id="ref-legend"></span></div></div>
     <div class="stats">
       <div class="stat"><div class="v">${myG.toFixed(1)}%</div><div class="k">growth per person, per year</div></div>
       <div class="stat"><div class="v">${pct(100 * (st.exports / st.exports0 - 1))}</div><div class="k">exports (${fmtBig(st.exports0)} → ${fmtBig(st.exports)})</div></div>
@@ -480,7 +587,7 @@ function renderHome() {
 document.querySelectorAll('.seg').forEach(seg => seg.querySelectorAll('button').forEach(b => b.onclick = () => { app.settings[seg.dataset.setting] = b.dataset.v; renderHome(); }));
 $('#btn-draw').onclick = () => { if (!app.db) return; clearSave(); newGame(); };
 $('#btn-continue').onclick = () => { const sv = loadSave(); if (sv && !restoreGame(sv)) toast('Could not restore the saved career.'); };
-$('#nav-restart').onclick = () => { if (confirm('Abandon this career and go back to the start?')) { stopTimer(); clearSave(); app.game = null; show('home'); renderHome(); } };
+$('#nav-restart').onclick = () => { if (confirm('Abandon this career and go back to the start?')) { pauseClock(); clearSave(); app.game = null; show('home'); renderHome(); } };
 $('#brand').onclick = e => { e.preventDefault(); if (app.game && !app.game.state.ended) { show('play'); } else { show('home'); renderHome(); } };
 window.addEventListener('resize', () => { const c = $('#chart'); if (c && $('#play').classList.contains('active')) renderChart(c); const e = $('#endchart'); if (e && $('#end').classList.contains('active')) renderChart(e, true); });
 

@@ -48,6 +48,10 @@ Runs 400 careers headlessly with three choosers (a persistent "thoughtful" strat
 | `tools/build-data.mjs` | Data pipeline |
 | `tools/calibrate.mjs` | Headless calibration harness |
 
+## How a career plays
+
+Time runs. A year is twelve ticks of a visible clock (about 7 seconds at 1×, 16× available), and anything that needs you stops the clock and arrives as a popup: your focus each January, a firm or a donor or a President mid-year, and five reflective pauses that can be switched off. "Next decision »" runs at full speed until something needs you. Auto mode lets a default government play. On a browser the tracker (chart, stats, reforms, log) sits on the left and the year in progress on the right; on a phone it stacks.
+
 ## How the model works, briefly
 
 Each year, growth per person = country prior + mild convergence + regime (growth spurt or collapse) + capped reform effects + explicit shocks + noise. The prior is the country's own growth history shrunk toward the LMIC mean. Reforms are stocks that grow when worked on, decay when not, and can be reversed by successors; their effects are convex and capped, so persistence helps and scattering does not. Policy mostly shifts odds: of a spurt starting, of it lasting, of an anchor firm landing. Siblings are four real countries with a similar income at the start year; in historical starts they follow their real paths, in recent starts they are simulated with a default government, which is also what runs your country whenever you are not the minister.
