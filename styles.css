@@ -238,3 +238,5 @@ table.assump td.v { font-family: var(--mono); white-space: nowrap; }
 .reveal h1 { font-size: clamp(3rem, 10vw, 5.5rem); font-weight: 700; letter-spacing: -.03em; margin: 8px 0; animation: fade .8s .3s ease both; }
 .reveal.done { opacity: 0; visibility: hidden; }
 @media (prefers-reduced-motion: reduce) { .reveal { display: none; } }
+/* Compact top bar on phones: not sticky, no meter captions */
+@media (max-width: 899px) { .topbar { position: static; } .meter .tiny { display: none; } .clockrow { gap: 8px; } .monthlabel { min-width: 0; } }
